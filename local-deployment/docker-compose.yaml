@@ -1,0 +1,26 @@
+services:
+  zookeeper:
+    extends:
+      file: ./../kafka/services.yaml
+      service: zookeeper
+
+  kafka:
+    extends:
+      file: ./../kafka/services.yaml
+      service: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_CFG_LISTENERS: SASL_PLAINTEXT://:9092,SASL_INTERNAL://:29092
+      KAFKA_CFG_ADVERTISED_LISTENERS: SASL_PLAINTEXT://localhost:9092,SASL_INTERNAL://kafka:29092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: SASL_PLAINTEXT:SASL_PLAINTEXT,SASL_INTERNAL:SASL_PLAINTEXT
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: SASL_INTERNAL
+
+  kafka-ui:
+    extends:
+      file: ./../kafka/services.yaml
+      service: ets-kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: SASL_INTERNAL://kafka:29092
