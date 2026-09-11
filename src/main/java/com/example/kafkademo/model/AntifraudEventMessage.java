@@ -3,6 +3,7 @@ package com.example.kafkademo.model;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Builder;
 import lombok.NonNull;
@@ -20,31 +21,31 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AntifraudEventMessage {
 
-    @NonNull
+    @NotNull
     Borrower borrower;
 
-    @NonNull
+    @NotNull
     String uid;
 
-    @NonNull
+    @NotNull
     String externalId;
 
-    @NonNull
+    @NotNull
     ApplicationStatus applicationStatus;
 
-    @NonNull
+    @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     ZonedDateTime statusDateTime;
 
-    @NonNull
+    @NotNull
     @Pattern(regexp = "^\\d{1,15}\\.\\d{2}$")
     BigDecimal loanAmount;
 
-    @NonNull
+    @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSZ")
     ZonedDateTime loanRequestTimestamp;
 
-    @NonNull
+    @NotNull
     Integer partnerId;
 
     List<String> refusalReasons;

@@ -17,6 +17,9 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      # По умолчанию для auto-create топиков — 3 партиции, чтобы concurrency=3 в consumer'е (KafkaConfig)
+      # реально распределялся по партициям, а не простаивал
+      KAFKA_NUM_PARTITIONS: 3
     healthcheck:
       test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1"]
       interval: 10s
@@ -34,3 +37,23 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     depends_on:
       - kafka
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: kafka-demo-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: message_event
+      POSTGRES_USER: kafka_demo
+      POSTGRES_PASSWORD: kafka_demo
+    volumes:
+      - kafka-demo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kafka_demo -d message_event"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kafka-demo-postgres-data:

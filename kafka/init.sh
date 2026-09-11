@@ -5,7 +5,11 @@ setup() {
 
   kafka-topics.sh $default_options --list
   # Создать топик
-  kafka-topics.sh $default_options --create --partitions 1 --replication-factor 1 --topic ets.antifraud-event --if-not-exists
+  kafka-topics.sh $default_options --create --partitions 3 --replication-factor 1 --topic ets.antifraud-event --if-not-exists
+  # На случай, если топик уже существовал (например, с прошлого раза) с меньшим числом партиций:
+  # --if-not-exists выше в этом случае ничего не сделает, поэтому доводим partitions до 3 явно
+  # (Kafka разрешает только увеличивать число партиций, не уменьшать)
+  kafka-topics.sh $default_options --alter --partitions 3 --topic ets.antifraud-event
   # Добавить пользователя equifax-transfer-service
   kafka-configs.sh $default_options --alter --entity-type users --entity-name equifax-transfer-service --add-config 'SCRAM-SHA-256=[password=equifax-transfer-service],SCRAM-SHA-512=[password=equifax-transfer-service]'
   # Дать права пользователю equifax-transfer-service на топик ets.antifraud-event

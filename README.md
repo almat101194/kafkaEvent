@@ -12,7 +12,7 @@
 - `src/main/resources/application.yml` — конфигурация подключения к Kafka (bootstrap-servers, group-id, топик)
 - `docker-compose.yml` — локальный однонодовый Kafka-брокер (KRaft, без Zookeeper) + веб-UI для просмотра топиков
 
-## 1. Поднять Kafka локально
+## 1. Поднять Kafka и PostgreSQL локально
 
 ```bash
 docker compose up -d
@@ -20,7 +20,9 @@ docker compose up -d
 
 Брокер будет доступен на `localhost:9092`. Веб-интерфейс kafka-ui — на http://localhost:8081 (там видно топики, партиции и сообщения).
 
-Проверить, что брокер поднялся:
+PostgreSQL поднимется на `localhost:5432` (база `message_event`, пользователь/пароль `kafka_demo`/`kafka_demo`). Таблица `message_event` создаётся автоматически при старте приложения через Flyway-миграции (`src/main/resources/db/migration/`).
+
+Проверить, что всё поднялось:
 
 ```bash
 docker compose ps
@@ -64,9 +66,13 @@ docker exec -it kafka-demo-broker /opt/kafka/bin/kafka-console-producer.sh \
 
 - **Адрес брокера**: `spring.kafka.bootstrap-servers` в `application.yml`. По умолчанию `localhost:9092`, можно переопределить переменной окружения `KAFKA_BOOTSTRAP_SERVERS` (например, при переходе на другой/облачный брокер).
 - **Топик**: `app.kafka.topic` в `application.yml`.
-- **Группа консьюмеров**: `spring.kafka.consumer.group-id`.
-- **Бизнес-логика обработки**: метод `listen(...)` в `KafkaMessageConsumer.java` — там, где стоит `// TODO`.
-- **Формат сообщения / десериализация**: `KafkaConsumerConfig.java` — там же `JsonDeserializer`, `ErrorHandlingDeserializer` и ack-mode заданы в коде, а не строками в `application.yml`.
+- **Группа консьюмеров**: `app.kafka.consumer-group-id` в `application.yml` (переопределяется `KAFKA_CONSUMER_GROUP_ID`), по умолчанию `equifax-transfer-service`. Инстансы с одинаковым значением делят партиции топика между собой (см. concurrency ниже).
+- **Бизнес-логика обработки**: `AntifraudEventListener.onMessage(...)`.
+- **Формат сообщения / десериализация / ack-mode**: `KafkaConfig.java` — `JsonDeserializer`, `ErrorHandlingDeserializer` и `ContainerProperties.AckMode.MANUAL_IMMEDIATE` заданы в коде, а не строками в `application.yml`.
+- **Параллелизм консьюмера**: `app.kafka.consumer-concurrency` в `application.yml` (переопределяется `KAFKA_CONSUMER_CONCURRENCY`), по умолчанию 3 — не должно превышать число партиций топика `ets.antifraud-event` (см. `kafka/init.sh` и `KAFKA_NUM_PARTITIONS` в `docker-compose.yml`), иначе лишние потоки будут простаивать без партиций.
+- **Подключение к БД**: `spring.datasource.*` в `application.yml` (переопределяется `DB_HOST`/`DB_PORT`/`DB_NAME`/`DB_USERNAME`/`DB_PASSWORD`).
+- **Схема БД**: Flyway-миграции в `src/main/resources/db/migration/` — версионируются, накатываются автоматически при старте (`spring.flyway.enabled=true`).
+- **Сохранение сообщений**: `AntifraudEventListener` мапит сообщение через `MessageEventMapper` и сохраняет через `MessageEventRepository` (`JpaRepository`) перед `acknowledgment.acknowledge()`; идемпотентность по `uid` защищает от дублей при повторной доставке.
 
 ## Если нужен и Producer
 

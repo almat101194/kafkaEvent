@@ -2,6 +2,7 @@ package com.example.kafkademo.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.Value;
@@ -15,11 +16,11 @@ import java.time.LocalDate;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class Borrower {
 
-    @NonNull
+    @NotNull
     @JsonFormat(pattern = "yyyy-MM-dd")
     LocalDate birthday;
 
-    @NonNull
+    @NotNull
     String inn;
 
     Boolean hasSpecialTaxRegime;

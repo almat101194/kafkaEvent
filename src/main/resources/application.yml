@@ -2,6 +2,19 @@
 app:
   kafka:
     topic: ets.antifraud-event
+    # group.id консьюмера — инстансы с одинаковым значением делят партиции топика между собой.
+    consumer-group-id: ${KAFKA_CONSUMER_GROUP_ID:equifax-transfer-service}
+    # Число consumer-потоков контейнера (ConcurrentMessageListenerContainer.concurrency).
+    # Не должно превышать число партиций топика — см. kafka/init.sh / KAFKA_NUM_PARTITIONS.
+    consumer-concurrency: ${KAFKA_CONSUMER_CONCURRENCY:3}
+    # max.poll.records — максимальный размер батча, который listener получит за один вызов onMessage().
+    consumer-batch-size: ${KAFKA_CONSUMER_BATCH_SIZE:10}
+    # Backoff для необработанных listener'ом исключений (например, БД недоступна). Растёт экспоненциально
+    # от initial до max-interval и ретраит бесконечно — не "сдаётся" через несколько попыток, как дефолт
+    # Spring Kafka, чтобы просадка инфраструктуры не приводила к молчаливой потере батча.
+    error-backoff-initial-interval-ms: ${KAFKA_ERROR_BACKOFF_INITIAL_INTERVAL_MS:1000}
+    error-backoff-multiplier: ${KAFKA_ERROR_BACKOFF_MULTIPLIER:2.0}
+    error-backoff-max-interval-ms: ${KAFKA_ERROR_BACKOFF_MAX_INTERVAL_MS:30000}
 
 spring:
   kafka:
@@ -12,3 +25,16 @@ spring:
       security.protocol: SASL_PLAINTEXT
       sasl.mechanism: SCRAM-SHA-256
       sasl.jaas.config: org.apache.kafka.common.security.scram.ScramLoginModule required username="${KAFKA_USERNAME:equifax-transfer-service}" password="${KAFKA_PASSWORD:equifax-transfer-service}";
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:message_event}
+    username: ${DB_USERNAME:kafka_demo}
+    password: ${DB_PASSWORD:kafka_demo}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      # схемой владеет Flyway (db/migration), Hibernate только сверяет маппинг сущностей со схемой
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
